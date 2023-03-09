@@ -87,4 +87,9 @@ class PolygonCreator {
     currentPolygon = [];
     return GeoJsonHelper.polygonFromLatLngsList(polygons);
   }
+
+  clear() {
+    polygons = [];
+    currentPolygon = [];
+  }
 }

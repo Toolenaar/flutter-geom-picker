@@ -45,34 +45,46 @@ class _GeomPickerMapViewViewState extends State<GeomPickerMapView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              center: LatLng(52.11635277208204, 5.080875271082007),
-              //heemskerk
-              //onTap: (_) => _popupLayerController.hidePopup(),
-              onTap: (position, latLng) {
-                _addPoint(latLng);
-              },
-
-              onPointerHover: (event, latLng) {
-                _drawPreviewLine(latLng);
-              },
-              interactiveFlags: InteractiveFlag.pinchZoom |
-                  InteractiveFlag.drag |
-                  InteractiveFlag.doubleTapZoom |
-                  InteractiveFlag.flingAnimation |
-                  InteractiveFlag.pinchMove,
-            ),
+          child: Stack(
             children: [
-              TileLayer(
-                urlTemplate: MapHelper.MAPBOX_URL,
+              FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  center: LatLng(52.11635277208204, 5.080875271082007),
+                  //heemskerk
+                  //onTap: (_) => _popupLayerController.hidePopup(),
+                  onTap: (position, latLng) {
+                    _addPoint(latLng);
+                  },
+
+                  onPointerHover: (event, latLng) {
+                    _drawPreviewLine(latLng);
+                  },
+                  interactiveFlags: InteractiveFlag.pinchZoom |
+                      InteractiveFlag.drag |
+                      InteractiveFlag.doubleTapZoom |
+                      InteractiveFlag.flingAnimation |
+                      InteractiveFlag.pinchMove,
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate: MapHelper.MAPBOX_URL,
+                  ),
+                  PolygonLayer(polygons: getPolygons()),
+                  PolylineLayer(
+                    polylines: _previewLine == null ? [] : [_previewLine!],
+                  ),
+                  MarkerLayer(markers: _markers)
+                ],
               ),
-              PolygonLayer(polygons: getPolygons()),
-              PolylineLayer(
-                polylines: _previewLine == null ? [] : [_previewLine!],
-              ),
-              MarkerLayer(markers: _markers)
+              Positioned(
+                right: 16,
+                top: 16,
+                child: IconButton(
+                  icon: Icons.delete,
+                  onTap: _clearData,
+                ),
+              )
             ],
           ),
         ),
@@ -122,7 +134,10 @@ class _GeomPickerMapViewViewState extends State<GeomPickerMapView> {
 
     _previewPolygon = _polyCreator.previewPolygon(latLng);
 
-    _previewPolygons = GeoJsonHelper.createMapPolygons(_previewPolygon!, color: Colors.red.withOpacity(0.2));
+    _previewPolygons = GeoJsonHelper.createMapPolygons(
+      _previewPolygon!,
+      color: Colors.red.withOpacity(0.2),
+    );
     setState(() {});
   }
 
@@ -154,6 +169,18 @@ class _GeomPickerMapViewViewState extends State<GeomPickerMapView> {
     var created = _polyCreator.polygons;
     var current = _polyCreator.currentPolygon;
     return GeoJsonHelper.polygonFromLatLngsList([...created, current]);
+  }
+
+  _clearData() {
+    _polyCreator.clear();
+    _currentPoint = null;
+    _previewLine = null;
+    _previewPolygon = null;
+    _previewPolygons = [];
+    _markers = [];
+    _savedPolygons = [];
+    _savedPolygon = null;
+    setState(() {});
   }
 }
 
@@ -190,6 +217,35 @@ class StartMarkerView extends StatelessWidget {
         width: 16,
         height: 16,
         decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+}
+
+class IconButton extends StatelessWidget {
+  final Function() onTap;
+  final IconData icon;
+  const IconButton({super.key, required this.onTap, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      borderRadius: BorderRadius.circular(42),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(42),
+        onTap: onTap,
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(42)),
+          child: Center(
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+        ),
       ),
     );
   }
