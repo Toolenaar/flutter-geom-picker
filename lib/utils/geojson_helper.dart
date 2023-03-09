@@ -43,6 +43,16 @@ class GeoJsonHelper {
     return GeoJSONPolygon.fromMap(data);
   }
 
+  static List<List<LatLng>> latLngListFromPolygon(GeoJSONPolygon poly) {
+    var coordsList = <List<LatLng>>[];
+
+    for (var coords in poly.coordinates) {
+      coordsList.add(coords.map((e) => LatLng(e[1], e[0])).toList());
+    }
+
+    return coordsList;
+  }
+
   static List<Polygon> createMapPolygons(GeoJSONPolygon pointsList, {Color? color}) {
     var polygons = <Polygon>[];
     for (var points in pointsList.coordinates) {
@@ -86,6 +96,10 @@ class PolygonCreator {
     polygons.add(currentPolygon);
     currentPolygon = [];
     return GeoJsonHelper.polygonFromLatLngsList(polygons);
+  }
+
+  setupFromJson(String json) {
+    polygons = GeoJsonHelper.latLngListFromPolygon(GeoJSONPolygon.fromJSON(json));
   }
 
   clear() {
