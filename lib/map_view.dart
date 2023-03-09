@@ -24,8 +24,6 @@ class _GeomPickerMapViewViewState extends State<GeomPickerMapView> {
 
   LatLng? _currentPoint;
   Polyline? _previewLine;
-  List<Polyline> _polyLines = [];
-  final Color _polyColor = Colors.red.withOpacity(0.2);
   final Color _lineColor = Colors.black;
   List<Marker> _markers = [];
 
@@ -117,7 +115,6 @@ class _GeomPickerMapViewViewState extends State<GeomPickerMapView> {
     if (_currentPoint == null) {
       _addStartPointMarker(latLng);
     }
-    print('add point');
     _currentPoint = latLng;
     // if (previousPoint != null && _currentPoint != null) {
     //   _polyLines.add(Polyline(color: _lineColor, strokeWidth: 2, points: [previousPoint, _currentPoint!]));
