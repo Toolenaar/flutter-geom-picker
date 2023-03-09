@@ -98,8 +98,10 @@ class PolygonCreator {
     return GeoJsonHelper.polygonFromLatLngsList(polygons);
   }
 
-  setupFromJson(String json) {
-    polygons = GeoJsonHelper.latLngListFromPolygon(GeoJSONPolygon.fromJSON(json));
+  GeoJSONPolygon setupFromJson(String json) {
+    var polygon = GeoJSONPolygon.fromJSON(json);
+    polygons = GeoJsonHelper.latLngListFromPolygon(polygon);
+    return polygon;
   }
 
   clear() {
