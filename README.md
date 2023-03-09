@@ -1,5 +1,5 @@
-# flutter_geom_picker
+# Basic geometry picker
 
-A new Flutter project.
+Geometry picker without anything fancy
 
 ![Alt image of geom picker tool](screenshot.png?raw=true "Screenshot")
