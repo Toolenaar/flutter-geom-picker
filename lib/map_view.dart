@@ -20,7 +20,7 @@ class _GeomPickerMapViewViewState extends State<GeomPickerMapView> {
   final PolygonCreator _polyCreator = PolygonCreator();
   GeoJSONPolygon? _previewPolygon;
 
-  List<Polygon> _savedPolygons = [];
+  List<Area> _savedAreas = [];
 
   LatLng? _currentPoint;
   Polyline? _previewLine;
@@ -30,7 +30,8 @@ class _GeomPickerMapViewViewState extends State<GeomPickerMapView> {
   List<Polygon>? _previewPolygons;
 
   GeoJSONPolygon? _savedPolygon;
-
+  bool _isEditing = false;
+  int geomId = 0;
   @override
   void initState() {
     //_loadData();
@@ -52,7 +53,7 @@ class _GeomPickerMapViewViewState extends State<GeomPickerMapView> {
                   //heemskerk
                   //onTap: (_) => _popupLayerController.hidePopup(),
                   onTap: (position, latLng) {
-                    _addPoint(latLng);
+                    _onTap(latLng);
                   },
 
                   onPointerHover: (event, latLng) {
@@ -98,7 +99,15 @@ class _GeomPickerMapViewViewState extends State<GeomPickerMapView> {
 
   List<Polygon> getPolygons() {
     var preview = _previewPolygons ?? [];
-    return [..._savedPolygons, ...preview];
+    var polygons = [];
+
+    if (_savedAreas.isNotEmpty) {
+      for (var area in _savedAreas) {
+        polygons.addAll(GeoJsonHelper.createMapPolygons(area.polygon, color: Colors.red.withOpacity(0.2)));
+      }
+    }
+
+    return [...polygons, ...preview];
   }
 
   // Future _loadData() async {
@@ -111,7 +120,30 @@ class _GeomPickerMapViewViewState extends State<GeomPickerMapView> {
   //   setState(() {});
   // }
 
+  void _onTap(LatLng latLng) async {
+    if (_isEditing) {
+      _addPoint(latLng);
+      return;
+    }
+    //if within existing poly show name marker
+    bool isWithin = false;
+    if (_savedAreas.isNotEmpty) {
+      for (var area in _savedAreas) {
+        if (area.pointIsWithinPolygon(latLng)) {
+          isWithin = true;
+          //show
+          _addNameMarker(area);
+        }
+      }
+    }
+    //start new geom
+    if (!isWithin) {
+      _addPoint(latLng);
+    }
+  }
+
   void _addPoint(LatLng latLng) async {
+    _isEditing = true;
     if (_currentPoint == null) {
       _addStartPointMarker(latLng);
     }
@@ -140,6 +172,7 @@ class _GeomPickerMapViewViewState extends State<GeomPickerMapView> {
 
   _addStartPointMarker(LatLng latLng) {
     var startMarker = Marker(
+      key: const ValueKey('startMarker'),
       point: latLng,
       width: 16,
       height: 16,
@@ -149,14 +182,19 @@ class _GeomPickerMapViewViewState extends State<GeomPickerMapView> {
   }
 
   _savePolygon() {
+    _isEditing = false;
     _polyCreator.addPoint(_markers.first.point); //close the polygon
     _savedPolygon = _polyCreator.createPolygon();
-    _savedPolygons = GeoJsonHelper.createMapPolygons(_savedPolygon!, color: Colors.red.withOpacity(0.2));
+
+    _savedAreas.add(Area(geometry: _savedPolygon!.toJSON(), name: 'test', id: geomId.toString()));
+    geomId += 1;
+
     _currentPoint = null;
     _previewLine = null;
     _previewPolygon = null;
     _previewPolygons = [];
     _markers = [];
+    _polyCreator.clear();
     setState(() {});
   }
 
@@ -175,8 +213,36 @@ class _GeomPickerMapViewViewState extends State<GeomPickerMapView> {
     _previewPolygon = null;
     _previewPolygons = [];
     _markers = [];
-    _savedPolygons = [];
+    _savedAreas = [];
     _savedPolygon = null;
+    setState(() {});
+  }
+
+  _addNameMarker(Area area) {
+    var exists = _markers.where((e) => e.key == ValueKey(area.id));
+    if (exists.isNotEmpty) {
+      _markers.remove(exists.first);
+    } else {
+      var center = GeoJsonHelper.getBBoxCenter(area.polygon.bbox);
+      var center2 =
+          GeoJsonHelper.getCenterLatLong(area.polygon.coordinates.first.map((e) => LatLng(e[1], e[0])).toList());
+      print(center);
+      print(center2);
+      _markers.add(
+        Marker(
+          width: 300,
+          height: 90,
+          anchorPos: AnchorPos.align(AnchorAlign.center),
+          key: ValueKey(area.id),
+          point: center,
+          builder: (context) => NameMarkerView(
+            onTap: () {},
+            name: area.name,
+          ),
+        ),
+      );
+    }
+
     setState(() {});
   }
 }
@@ -211,9 +277,33 @@ class StartMarkerView extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 16,
-        height: 16,
         decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+}
+
+class NameMarkerView extends StatelessWidget {
+  final String name;
+  final Function()? onTap;
+  const NameMarkerView({super.key, required this.name, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+          child: Text(
+            name,
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.black),
+          ),
+        ),
       ),
     );
   }
