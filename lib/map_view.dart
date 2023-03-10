@@ -138,7 +138,12 @@ class _GeomPickerMapViewViewState extends State<GeomPickerMapView> {
     }
     //start new geom
     if (!isWithin) {
-      _addPoint(latLng);
+      if (_markers.isNotEmpty) {
+        _markers = []; //remove name markers if added
+        setState(() {});
+      } else {
+        _addPoint(latLng);
+      }
     }
   }
 
@@ -224,10 +229,9 @@ class _GeomPickerMapViewViewState extends State<GeomPickerMapView> {
       _markers.remove(exists.first);
     } else {
       var center = GeoJsonHelper.getBBoxCenter(area.polygon.bbox);
-      var center2 =
-          GeoJsonHelper.getCenterLatLong(area.polygon.coordinates.first.map((e) => LatLng(e[1], e[0])).toList());
-      print(center);
-      print(center2);
+      // var center2 =
+      //     GeoJsonHelper.getCenterLatLong(area.polygon.coordinates.first.map((e) => LatLng(e[1], e[0])).toList());
+
       _markers.add(
         Marker(
           width: 300,
@@ -235,8 +239,11 @@ class _GeomPickerMapViewViewState extends State<GeomPickerMapView> {
           anchorPos: AnchorPos.align(AnchorAlign.center),
           key: ValueKey(area.id),
           point: center,
-          builder: (context) => NameMarkerView(
-            onTap: () {},
+          builder: (context) => NameEditView(
+            onChanged: (name) {
+              area.name = name;
+              setState(() {});
+            },
             name: area.name,
           ),
         ),
@@ -303,6 +310,45 @@ class NameMarkerView extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: Colors.black),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class NameEditView extends StatefulWidget {
+  final String? name;
+  final Function(String)? onChanged;
+  const NameEditView({super.key, required this.name, this.onChanged});
+
+  @override
+  State<NameEditView> createState() => _NameEditViewState();
+}
+
+class _NameEditViewState extends State<NameEditView> {
+  late TextEditingController _controller;
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    _controller = TextEditingController(text: widget.name);
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+        child: EditableText(
+          controller: _controller,
+          focusNode: _focusNode,
+          onChanged: widget.onChanged,
+          cursorColor: Colors.black,
+          backgroundCursorColor: Colors.red,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.black),
         ),
       ),
     );

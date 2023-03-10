@@ -204,7 +204,7 @@ class PolygonCreator {
 
 class Area {
   final String id;
-  final String name;
+  String name;
   final String geometry;
   late final GeoJSONPolygon polygon;
 
